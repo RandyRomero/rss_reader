@@ -3,11 +3,10 @@
 # some kind of backend which takes ajax-request, reads certains rss feeds and return specific information from
 # them as json with list of posts
 
-from flask import Flask
-import feedparser
 import json
-from flask import request
-app = Flask(__name__)
+import feedparser
+from flask import request, render_template
+from app import app
 
 rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'techradar': 'https://www.techradar.com/rss',
@@ -20,8 +19,9 @@ rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
 
 
 @app.route('/')
+@app.route('/index')
 def start():
-    return 'Hi! This is a small server that parses rss feed and returns some items from it as json'
+    return render_template('index.html')
 
 
 # Function that figures out which rss feed to return, gets it from another function, convert to json and returns

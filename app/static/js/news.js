@@ -30,14 +30,13 @@ $(function() {
     };
 
     RSSReader.prototype.onGetData = function(response) {
-        var data = JSON.parse(response);
-        this.renderFeed(data.items);
+        this.renderFeed(response);
     };
 
     RSSReader.prototype.getFeed = function(feedId) {
         $.ajax({
             url: this.feedUrl,
-            data: { rsourse: feedId},
+            data: { rsource: feedId},
             method: 'GET',
             dataType: 'json'
         }).done(this.onGetData.bind(this)).fail(function(error) {
