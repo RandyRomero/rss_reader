@@ -7,6 +7,9 @@ import json
 import feedparser
 from flask import request, render_template
 from app import app
+from datetime import datetime
+import dateutil.parser  # pip install python-dateutil // is needed to convert date from iso to datetime object
+import pytz
 
 rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'techradar': 'https://www.techradar.com/rss',
@@ -33,9 +36,9 @@ def start_parse_rss():
     # If you need to return all rss feeds in one
     if rss_source == 'all':
         mixed_feed = []
-        for link in rss_links:
+        for link in rss_links.values():
             mixed_feed.extend(parse_rss(link))
-        new_mixed_feed = sorted(mixed_feed, key=lambda k: k['published'])
+        new_mixed_feed = sorted(mixed_feed, reverse=True, key=lambda k: k['published'])
         return json.dumps(new_mixed_feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
     # if you need to return post only of one feed
@@ -66,16 +69,24 @@ def parse_rss(link):
         print('Title: ', entry.title)
         post['title'] = entry.title
 
-        print('Published: ', entry.published)
-        post['published'] = entry.published
+        # Converting time from strings to timestamp
+        try:
+            date_temp = datetime.strptime(entry.published, '%a, %d %b %Y %H:%M:%S %z')
+            print(entry.published)
+            print(date_temp)
+            post['published'] = date_temp.timestamp()
+        except ValueError:
+            # Converting time from iso format (like this 2018-08-02T13:32:37-04:00) to timestamp
+            d = dateutil.parser.parse(entry.published)
+            d = d.replace(tzinfo=pytz.utc) - d.utcoffset()  # lead up given time to UTC 00:00
+            print(d)
+            post['published'] = d.timestamp()  # save as timestamp
 
         author = entry.get('author', None)
         if author:
             print('Author: ', author)
         post['author'] = author
-
         post['summary'] = entry.summary
-
         post['enclosure'] = []
         for enclosure in entry.enclosures:
             print('Enclosure: ', enclosure.href)

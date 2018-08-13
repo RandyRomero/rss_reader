@@ -18,7 +18,7 @@ $(function() {
     };
 
     RSSReader.prototype.init = function() {
-        this.getFeed('techradar');
+        this.getFeed('3dnews-hard');
     };
 
     RSSReader.prototype.renderFeed = function(dataList) {
@@ -27,6 +27,8 @@ $(function() {
         dataList.forEach(function (item) {
             listHtml.push(_self.renderItem(item));
         });
+
+        this.arcticlesList.html(listHtml)
     };
 
     RSSReader.prototype.onGetData = function(response) {
@@ -47,9 +49,11 @@ $(function() {
     RSSReader.prototype.renderItem = function(item) {
         var newItem = this.articleTmpl.clone().removeClass('article-tmpl');
         newItem.find('.post-heading').html(item.title);
-        newItem.find('.excerpt').html(item.summary);
+        // newItem.find('.excerpt').html(item.summary);
         newItem.find('.author').html(item.author);
-        newItem.find('.date').html(moment().format(item.published));
+        // Get time as a timestamp and convert it to relative string (like 4 minutes ago, 2 hours ago etc) via
+        // moment.js library
+        newItem.find('.date').html((moment.unix(item.published)).fromNow());
         newItem.find('.action-button').attr('href', item.link);
         return newItem;
     };
