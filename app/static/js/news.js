@@ -18,7 +18,7 @@ $(function() {
     };
 
     RSSReader.prototype.init = function() {
-        this.getFeed('3dnews-hard');
+        this.getFeed('all');
     };
 
     RSSReader.prototype.renderFeed = function(dataList) {
@@ -50,7 +50,9 @@ $(function() {
         var newItem = this.articleTmpl.clone().removeClass('article-tmpl');
         newItem.find('.post-heading').html(item.title);
         // newItem.find('.excerpt').html(item.summary);
-        newItem.find('.author').html(item.author);
+        if (item.author) {
+            newItem.find('.author').html(' by ' + item.author);
+        }
         // Get time as a timestamp and convert it to relative string (like 4 minutes ago, 2 hours ago etc) via
         // moment.js library
         newItem.find('.date').html((moment.unix(item.published)).fromNow());
