@@ -1,4 +1,17 @@
+.article {
+    margin: 20px 0 20px 0;
+}
+
 .article-tmpl {
     display: none;
 }
 
+.pic {
+    height: 400px;
+    width: auto;
+}
+
+h2 {
+    margin: 0;
+    padding: 0;
+}

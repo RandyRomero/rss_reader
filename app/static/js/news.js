@@ -50,13 +50,18 @@ $(function() {
         var newItem = this.articleTmpl.clone().removeClass('article-tmpl');
         newItem.find('.post-heading').html(item.title);
         // newItem.find('.excerpt').html(item.summary);
-        if (item.author) {
-            newItem.find('.author').html(' by ' + item.author);
+        if (item['author']) {
+            newItem.find('.author').html(' by ' + item['author']);
         }
         // Get time as a timestamp and convert it to relative string (like 4 minutes ago, 2 hours ago etc) via
         // moment.js library
-        newItem.find('.date').html((moment.unix(item.published)).fromNow());
-        newItem.find('.action-button').attr('href', item.link);
+        newItem.find('.date').html('Published ' + (moment.unix(item['published'])).fromNow());
+
+        if (item['image']) {
+            newItem.find('.pic').attr('src', item['image']);
+        }
+
+        newItem.find('.action-button').attr('href', item['link']);
         return newItem;
     };
 
