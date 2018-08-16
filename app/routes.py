@@ -11,6 +11,9 @@ from datetime import datetime
 import dateutil.parser  # pip install python-dateutil // is needed to convert date from iso to datetime object
 import pytz
 from bs4 import BeautifulSoup as bs
+from pprint import pprint
+
+NEWS_TO_RETURN_AT_ONCE = 20
 
 rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'ferra-news': 'https://www.ferra.ru/export/news-rss.xml',
@@ -21,6 +24,11 @@ rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'tproger': 'https://tproger.ru/feed/',
              '3dnews-hard': 'https://3dnews.ru/news/rss/',
              'techspot': 'https://www.techspot.com/backend.xml'}
+
+# TODO Auto-update
+
+# TODO Parse all rss feeds simultaneously one post by one and yield only amount that fits in page, than parse and
+# yield next N posts when user scroll the page
 
 
 # Get link to image from html string with nested tags
@@ -90,6 +98,17 @@ def parse_rss(link):
     return one_feed
 
 
+def make_big_feed():
+    # construct feed with all news from all rss-feeds, but return only N news at once
+
+    mixed_feed = []
+    for link in rss_links.values():
+        mixed_feed.extend(parse_rss(link))
+    new_mixed_feed = sorted(mixed_feed, reverse=True, key=lambda k: k['published'])
+    for x in range(len(new_mixed_feed)):
+        yield new_mixed_feed[x:x+NEWS_TO_RETURN_AT_ONCE]
+
+
 @app.route('/')
 @app.route('/index')
 def start():
@@ -100,17 +119,15 @@ def start():
 @app.route('/getfeed')
 def start_parse_rss():
 
+    # get argument from request where coded what rss_feed page asks from server
     rss_source = request.args.get('rsource')
 
     # If you need to return all rss feeds in one
     if rss_source == 'all':
-        mixed_feed = []
-        for link in rss_links.values():
-            mixed_feed.extend(parse_rss(link))
-        new_mixed_feed = sorted(mixed_feed, reverse=True, key=lambda k: k['published'])
-        return json.dumps(new_mixed_feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+        big_feed_gen = make_big_feed()
+        return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
-    # if you need to return posts only of one feed
+    # if you need to return posts only from one particular source
     feed = parse_rss(rss_links[rss_source])
     return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
