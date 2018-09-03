@@ -99,14 +99,44 @@ def parse_rss(link):
 
 
 def make_big_feed():
-    # construct feed with all news from all rss-feeds, but return only N news at once
-
+    """ Construct feed with all news from all rss-feeds sorted by time of publishing, but return only N news at once """
     mixed_feed = []
+
+    # Put all news together in one list
     for link in rss_links.values():
         mixed_feed.extend(parse_rss(link))
+
+    # Sort news posts by time of publishing
     new_mixed_feed = sorted(mixed_feed, reverse=True, key=lambda k: k['published'])
-    for x in range(len(new_mixed_feed)):
+
+    # Return only some part of news at once
+    for x in range(0, len(new_mixed_feed), NEWS_TO_RETURN_AT_ONCE):
+        print('news counter', x)
         yield new_mixed_feed[x:x+NEWS_TO_RETURN_AT_ONCE]
+
+
+def return_feed():
+    """ Closure in order to make a list with all news sorted, but to return to client only by several items at once """
+
+    # A list of news items. We need to preserve it in order to create it once during the first call, and to
+    # return these items from this already existing list
+    big_feed_gen = None
+
+    def nested_return_feed():
+        nonlocal big_feed_gen
+        if big_feed_gen:
+            try:
+                return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '),
+                                  ensure_ascii=False)
+            except StopIteration:
+                return '', 204
+        else:
+            big_feed_gen = make_big_feed()
+            return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+    return nested_return_feed
+
+
+return_feed_closure = return_feed()
 
 
 @app.route('/')
@@ -124,8 +154,7 @@ def start_parse_rss():
 
     # If you need to return all rss feeds in one
     if rss_source == 'all':
-        big_feed_gen = make_big_feed()
-        return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+        return return_feed_closure()
 
     # if you need to return posts only from one particular source
     feed = parse_rss(rss_links[rss_source])
