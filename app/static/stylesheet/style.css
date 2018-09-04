@@ -6,7 +6,7 @@ body {
 }
 
 .article {
-    margin: 20px 0 20px 0;
+    margin: 0 0 20px 0;
 }
 
 .article-tmpl {
@@ -16,25 +16,31 @@ body {
 .articles {
     background-color: rgba(255, 255, 255, 0.2);
     margin: auto;
-    padding: 0 25px 0 25px;
+    padding: 25px 25px 0 25px;
     width: 800px;
 }
 
-.pic {
-    height: 300px;
-    width: auto;
+.pic { /* fit images to our feed */
+    height: auto;
+    width: 800px;
 }
 
-h3 {
-    color: white;
+.news-head h2 {
+    color: rgba(255, 255, 255, 0.85);
     margin: 0;
-    padding: 0;
+    padding: 0 0 0 10px;
 }
 
-.meta {
+.news-head h4 {
+    color: rgba(255, 255, 255, 0.7);
+    margin: 0;
+    padding: 8px 0 10px 10px;
+}
+
+.news-head {
     display: inline-block;
     position: relative;
-    background-color: rgba(0, 0, 0, 0.8);
+    background-color: rgba(0, 0, 0, 0.7);
     height: 100%;
     width: 100%;
     z-index: 999;
