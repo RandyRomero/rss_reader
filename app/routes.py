@@ -11,6 +11,7 @@ from datetime import datetime
 import dateutil.parser  # pip install python-dateutil // is needed to convert date from iso to datetime object
 import pytz
 from bs4 import BeautifulSoup as bs
+import re
 from pprint import pprint
 
 NEWS_TO_RETURN_AT_ONCE = 20
@@ -26,9 +27,6 @@ rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'techspot': 'https://www.techspot.com/backend.xml'}
 
 # TODO Auto-update
-
-# TODO Parse all rss feeds simultaneously one post by one and yield only amount that fits in page, than parse and
-# yield next N posts when user scroll the page
 
 
 # Get link to image from html string with nested tags
@@ -77,12 +75,13 @@ def parse_rss(link):
 
         post['published'] = get_timestamp(entry.published)
 
-        author = entry.get('author', None)
-        if author:
-            print('Author: ', author)
-        post['author'] = author
+        # I don't think we need to mention author, but in case I change my mind let this code be here
+        # author = entry.get('author', None)
+        # if author:
+        #     print('Author: ', author)
+        # post['author'] = author
 
-        # Try to get link to image from one of the place where it can be
+        # Try to get link to image from one of a place where it can be
         try:
             pic = entry.enclosures[0].href
         except IndexError:
@@ -90,7 +89,11 @@ def parse_rss(link):
         post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
         print(post['image'])
 
-        post['link'] = entry.link
+        link = entry.link
+        post['link'] = link
+        domain_name = re.search(r'://(.+?)/', link).group(1)
+
+        post['domain_name'] = domain_name if domain_name else 'unknown'
 
         print('\nNext item\n')
         one_feed.append(post)

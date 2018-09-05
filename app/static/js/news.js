@@ -71,8 +71,8 @@ $(function() {
         let newItem = this.articleTmpl.clone().removeClass('article-tmpl');
         newItem.find('.post-heading').html(item.title);
         // newItem.find('.excerpt').html(item.summary);
-        if (item['author']) {
-            newItem.find('.author').html(' by ' + item['author']);
+        if (item['domain_name']) {
+            newItem.find('.author').html(' by ' + item['domain_name']);
         }
         // Get time as a timestamp and convert it to relative string (like 4 minutes ago, 2 hours ago etc) via
         // moment.js library
