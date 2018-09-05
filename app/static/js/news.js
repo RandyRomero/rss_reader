@@ -12,7 +12,7 @@ $(function() {
     let RSSReader = function() {
         // this.feedUrl = 'http://node.dev.puzankov.com/rss/data';
         this.feedUrl = 'http://127.0.0.1:5000/getfeed';
-        this.arcticlesList = $('.articles');
+        this.articlesList = $('.articles');
         this.articleTmpl = $('.article-tmpl');
         this.init();
     };
@@ -45,7 +45,7 @@ $(function() {
             listHtml.push(_self.renderItem(item));
         });
 
-        this.arcticlesList.append(listHtml);
+        this.articlesList.append(listHtml);
     };
 
     RSSReader.prototype.onGetData = function(response) {
@@ -63,6 +63,7 @@ $(function() {
             this.onGetData(response);
             this.scrollListener = this.trackScroll.bind(this);
             $(window).on('scroll', this.scrollListener);
+            this.articlesList.addClass('articles-loaded');
         })
             .fail((error) => { console.log(error);});
     };

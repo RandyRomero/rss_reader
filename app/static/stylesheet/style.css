@@ -16,8 +16,13 @@ body {
 .articles {
     background-color: rgba(255, 255, 255, 0.2);
     margin: auto;
-    padding: 25px 25px 0 25px;
+    padding: 0 25px 0 25px;
     width: 800px;
+}
+
+.articles-loaded {
+    /* add padding after loading or there is stupid emtpy ribbon on the screen because of this padding */
+    padding-top: 25px;
 }
 
 .pic { /* fit images to our feed */
