@@ -10,7 +10,6 @@
 
 $(function() {
     let RSSReader = function() {
-        // this.feedUrl = 'http://node.dev.puzankov.com/rss/data';
         this.feedUrl = 'http://127.0.0.1:5000/getfeed';
         this.articlesList = $('.articles');
         this.articleTmpl = $('.article-tmpl');
@@ -18,13 +17,13 @@ $(function() {
     };
 
     RSSReader.prototype.init = function() {
-        this.getFeed('all');
+        this.getFeed('all', 0);
     };
 
     // Function that tracks if user at the and of a page. If so, it call function to render new news
     // and turn off the handler which activates this trackScroll function
 
-    RSSReader.prototype.trackScroll = function(event) {
+    RSSReader.prototype.trackScroll = function() {
         let heightOfPage = document.documentElement.scrollHeight;
         let currentScroll = pageYOffset;
         let heightOfWindow = document.documentElement.clientHeight;
@@ -34,7 +33,7 @@ $(function() {
             console.log('adding more news');
             console.dir(this);
             $(window).off('scroll', this.scrollListener);
-            this.getFeed('all');
+            this.getFeed('all', 1);
         }
     };
 
@@ -52,11 +51,15 @@ $(function() {
         this.renderFeed(response);
     };
 
-    RSSReader.prototype.getFeed = function(feedId) {
+    RSSReader.prototype.getFeed = function(feedId, addNews) {
+        // feedId - name of the resource to pick the right link to rss feed
+        // addNews - if it is 1 - we ask server to send next portion of news that already were parsed by server
+        // if it is 0 - we ask server to parse feed(s) again and send a new news feed
         console.log('Sending ajax-request to get more news...');
+        console.log('adding news:', addNews);
         $.ajax({
             url: this.feedUrl,
-            data: { rsource: feedId},
+            data: { rsource: feedId, addNews: addNews},
             method: 'GET',
             dataType: 'json'
         }).done((response) => {

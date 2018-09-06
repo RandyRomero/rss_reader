@@ -40,14 +40,14 @@ def get_img_source(htmlstr):
 def get_timestamp(date):
     try:
         date_temp = datetime.strptime(date, '%a, %d %b %Y %H:%M:%S %z')
-        print(date)
-        print(date_temp)
+        # print(date)
+        # print(date_temp)
         return date_temp.timestamp()
     except ValueError:
         # Converting time from iso format (like this 2018-08-02T13:32:37-04:00) to timestamp
         d = dateutil.parser.parse(date)
         d = d.replace(tzinfo=pytz.utc) - d.utcoffset()  # lead up given time to UTC 00:00
-        print(d)
+        # print(d)
         return d.timestamp()  # save as timestamp
 
 
@@ -56,24 +56,23 @@ def parse_rss(link):
     one_feed = []
 
     # add some visual highlight
-    print(5 * '\n')
-    line = '*'
-    for i in range(10):
-        print(line)
-        line = ' ' + line
-    print('RSS FEED: ', link)
-    for i in range(10):
-        line = line[1:]
-        print(line)
+    # print(5 * '\n')
+    # line = '*'
+    # for i in range(10):
+    #     print(line)
+    #     line = ' ' + line
+    print('Parsing feed: ', link)
+    # for i in range(10):
+    #     line = line[1:]
+    #     print(line)
 
     rss = feedparser.parse(link)  # Get file from internet, open it with xml-parser
 
     for entry in rss.entries:
-        post = {}
-        print('Title: ', entry.title)
-        post['title'] = entry.title
+        # print('Title: ', entry.title)
 
-        post['published'] = get_timestamp(entry.published)
+        post = {'title': entry.title,
+                'published': get_timestamp(entry.published)}
 
         # I don't think we need to mention author, but in case I change my mind let this code be here
         # author = entry.get('author', None)
@@ -87,15 +86,14 @@ def parse_rss(link):
         except IndexError:
             pic = get_img_source(entry.summary)
         post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
-        print(post['image'])
+        # print(post['image'])
 
         link = entry.link
         post['link'] = link
         domain_name = re.search(r'://(.+?)/', link).group(1)
-
         post['domain_name'] = domain_name if domain_name else 'unknown'
 
-        print('\nNext item\n')
+        # print('\nNext item\n')
         one_feed.append(post)
 
     return one_feed
@@ -127,6 +125,7 @@ def return_feed():
 
     def nested_return_feed():
         nonlocal big_feed_gen
+
         if big_feed_gen:
             try:
                 return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '),
@@ -151,13 +150,22 @@ def start():
 # Function that figures out which rss feed to return, gets it from another function, convert to json and returns
 @app.route('/getfeed')
 def start_parse_rss():
-
+    global return_feed_closure
     # get argument from request where coded what rss_feed page asks from server
-    rss_source = request.args.get('rsource')
+    rss_source = str(request.args.get('rsource'))
+    add_news = int(request.args.get('addNews'))
+    print('add news:', add_news)
+    print('rss_source:', rss_source)
 
     # If you need to return all rss feeds in one
     if rss_source == 'all':
-        return return_feed_closure()
+        if add_news:
+            print('adding news')
+            return return_feed_closure()
+        else:
+            print('making new feed')
+            return_feed_closure = return_feed()
+            return return_feed_closure()
 
     # if you need to return posts only from one particular source
     feed = parse_rss(rss_links[rss_source])
