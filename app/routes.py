@@ -40,45 +40,31 @@ def get_img_source(htmlstr):
 def get_timestamp(date):
     try:
         date_temp = datetime.strptime(date, '%a, %d %b %Y %H:%M:%S %z')
-        # print(date)
-        # print(date_temp)
         return date_temp.timestamp()
     except ValueError:
         # Converting time from iso format (like this 2018-08-02T13:32:37-04:00) to timestamp
         d = dateutil.parser.parse(date)
         d = d.replace(tzinfo=pytz.utc) - d.utcoffset()  # lead up given time to UTC 00:00
-        # print(d)
         return d.timestamp()  # save as timestamp
 
 
 def parse_rss(link):
 
+    """
+    Function that takes one link to the rss feed and picks up specific data from it, saves each news as a dictionary,
+    push these dictionaries to the list
+    :param link: link to rss feed
+    :return: list with dictionaries
+    """
+
     one_feed = []
-
-    # add some visual highlight
-    # print(5 * '\n')
-    # line = '*'
-    # for i in range(10):
-    #     print(line)
-    #     line = ' ' + line
     print('Parsing feed: ', link)
-    # for i in range(10):
-    #     line = line[1:]
-    #     print(line)
-
     rss = feedparser.parse(link)  # Get file from internet, open it with xml-parser
 
     for entry in rss.entries:
-        # print('Title: ', entry.title)
 
         post = {'title': entry.title,
                 'published': get_timestamp(entry.published)}
-
-        # I don't think we need to mention author, but in case I change my mind let this code be here
-        # author = entry.get('author', None)
-        # if author:
-        #     print('Author: ', author)
-        # post['author'] = author
 
         # Try to get link to image from one of a place where it can be
         try:
@@ -86,14 +72,12 @@ def parse_rss(link):
         except IndexError:
             pic = get_img_source(entry.summary)
         post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
-        # print(post['image'])
 
         link = entry.link
         post['link'] = link
         domain_name = re.search(r'://(.+?)/', link).group(1)
         post['domain_name'] = domain_name if domain_name else 'unknown'
 
-        # print('\nNext item\n')
         one_feed.append(post)
 
     return one_feed
