@@ -14,7 +14,9 @@ from bs4 import BeautifulSoup as bs
 import re
 from pprint import pprint
 
-NEWS_TO_RETURN_AT_ONCE = 20
+# will be changed when I add database with users, because we need to track this time for every user
+last_time_user_gets_his_news = None
+
 
 rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'ferra-news': 'https://www.ferra.ru/export/news-rss.xml',
@@ -48,7 +50,7 @@ def get_timestamp(date):
         return d.timestamp()  # save as timestamp
 
 
-def parse_rss(link):
+def parse_rss(link, mode):
 
     """
     Function that takes one link to the rss feed and picks up specific data from it, saves each news as a dictionary,
@@ -58,10 +60,18 @@ def parse_rss(link):
     """
 
     one_feed = []
+    news_counter = 0
     print('Parsing feed: ', link)
     rss = feedparser.parse(link)  # Get file from internet, open it with xml-parser
 
     for entry in rss.entries:
+        # print('news_counter:', news_counter)
+        if mode == 'count':
+            if get_timestamp(entry.published) < last_time_user_gets_his_news:
+                return news_counter
+            else:
+                news_counter += 1
+                continue
 
         post = {'title': entry.title,
                 'published': get_timestamp(entry.published)}
@@ -69,8 +79,9 @@ def parse_rss(link):
         # Try to get link to image from one of a place where it can be
         try:
             pic = entry.enclosures[0].href
-        except IndexError:
+        except (IndexError, AttributeError):
             pic = get_img_source(entry.summary)
+
         post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
 
         link = entry.link
@@ -89,18 +100,18 @@ def make_big_feed():
 
     # Put all news together in one list
     for link in rss_links.values():
-        mixed_feed.extend(parse_rss(link))
+        mixed_feed.extend(parse_rss(link, 'get_news'))
 
     # Sort news posts by time of publishing
     new_mixed_feed = sorted(mixed_feed, reverse=True, key=lambda k: k['published'])
 
     # Return only some part of news at once
-    for x in range(0, len(new_mixed_feed), NEWS_TO_RETURN_AT_ONCE):
+    for x in range(0, len(new_mixed_feed), app.config['NEWS_TO_RETURN_AT_ONCE']):
         print('news counter', x)
-        yield new_mixed_feed[x:x+NEWS_TO_RETURN_AT_ONCE]
+        yield new_mixed_feed[x:x+app.config['NEWS_TO_RETURN_AT_ONCE']]
 
 
-def return_feed():
+def get_big_feed():
     """ Closure in order to make a list with all news sorted, but to return to client only by several items at once """
 
     # A list of news items. We need to preserve it in order to create it once during the first call, and to
@@ -122,7 +133,7 @@ def return_feed():
     return nested_return_feed
 
 
-return_feed_closure = return_feed()
+get_big_feed_closure = get_big_feed()
 
 
 @app.route('/')
@@ -132,9 +143,10 @@ def start():
 
 
 # Function that figures out which rss feed to return, gets it from another function, convert to json and returns
-@app.route('/getfeed')
+@app.route('/get-feed')
 def start_parse_rss():
-    global return_feed_closure
+    global last_time_user_gets_his_news
+    global get_big_feed_closure
     # get argument from request where coded what rss_feed page asks from server
     rss_source = str(request.args.get('rsource'))
     add_news = int(request.args.get('addNews'))
@@ -145,14 +157,29 @@ def start_parse_rss():
     if rss_source == 'all':
         if add_news:
             print('adding news')
-            return return_feed_closure()
+            return get_big_feed_closure()
         else:
             print('making new feed')
-            return_feed_closure = return_feed()
-            return return_feed_closure()
-
+            # Resetting closure to get refreshed feed
+            get_big_feed_closure = get_big_feed()
+            last_time_user_gets_his_news = datetime.timestamp(datetime.now())
+            return get_big_feed_closure()
     # if you need to return posts only from one particular source
-    feed = parse_rss(rss_links[rss_source])
+    feed = parse_rss(rss_links[rss_source], 'get_news')
     return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
+
+@app.route('/fresh-news-counter')
+def get_news_counter():
+    """Launch parsing of rss feeds to count number of news that have
+    appeared since last time server returned news to this user"""
+    counter = 0
+    for link in rss_links.values():
+        news_number = parse_rss(link, 'count')
+        try:
+            counter += news_number
+        except TypeError:
+            print(news_number)
+
+    return str(counter)
 

@@ -5,8 +5,13 @@ body {
     background-size: cover;
 }
 
-.article {
+.article, .fresh-news-counter {
     margin: 0 0 20px 0;
+}
+
+.fresh-news-counter h2{
+    color: rgba(255, 255, 255, 0.85);
+    text-align: center;
 }
 
 .article-tmpl {
@@ -42,13 +47,18 @@ body {
     padding: 8px 0 10px 10px;
 }
 
-.news-head {
+.news-head, .fresh-news-counter {
     display: inline-block;
     position: relative;
     background-color: rgba(0, 0, 0, 0.7);
     height: 100%;
     width: 100%;
     z-index: 999;
+}
+
+.fresh-news-counter:hover {
+    cursor: pointer;
+    background-color: rgba(0, 0, 0, 0.4);
 }
 
 .action-button {

@@ -10,7 +10,7 @@
 
 $(function() {
     let RSSReader = function() {
-        this.feedUrl = 'http://127.0.0.1:5000/getfeed';
+        this.feedUrl = 'http://127.0.0.1:5000/get-feed';
         this.articlesList = $('.articles');
         this.articleTmpl = $('.article-tmpl');
         this.init();
@@ -18,6 +18,7 @@ $(function() {
 
     RSSReader.prototype.init = function() {
         this.getFeed('all', 0);
+        setTimeout(() => { this.getNewsCount() } , 7000);
     };
 
     // Function that tracks if user at the and of a page. If so, it call function to render new news
@@ -88,6 +89,37 @@ $(function() {
 
         newItem.find('.action-button').attr('href', item['link']);
         return newItem;
+    };
+
+    RSSReader.prototype.renderMoreNewsButton = function(newsCounter) {
+        // show big button above news feed with counter how much news have appeared in rss feed since user updated the
+        // page last time
+
+        // if (newsCounter < 1) {
+        //     console.log('There are no new news.');
+        //     return;
+        // }
+        let newContainer = $('<div/>');
+        let counter = $('<h2/>');
+        counter.text('More news: ' + newsCounter);
+        newContainer.addClass('fresh-news-counter');
+        newContainer.append(counter);
+        this.articlesList.prepend(newContainer);
+    };
+
+    RSSReader.prototype.getNewsCount = function() {
+        // Make ajax-request to get quantity of news have appeared in rss feed since user updated the
+        // page last time
+
+        console.log('Sending ajax-request to get number of fresh news...');
+        $.ajax({
+            url: 'http://127.0.0.1:5000/fresh-news-counter',
+            method: 'GET',
+            dataType: 'json'
+        }).done((response) => {
+            console.log('We\'ve got the counter!');
+            this.renderMoreNewsButton(response);
+        }).fail((error) => { console.log(error); })
     };
 
     window.rssReader = new RSSReader();
