@@ -56,6 +56,10 @@ body {
     z-index: 999;
 }
 
+.tmpl {
+    display: none;
+}
+
 .fresh-news-counter:hover {
     cursor: pointer;
     background-color: rgba(0, 0, 0, 0.4);

@@ -16,9 +16,18 @@ $(function() {
         this.init();
     };
 
+    RSSReader.prototype.checkUpdates = function() {
+        // Recursively checking for more news
+        setTimeout(() => {
+            this.getNewsCount();
+            this.checkUpdates();
+        } , 30000);
+    };
+
+
     RSSReader.prototype.init = function() {
         this.getFeed('all', 0);
-        setTimeout(() => { this.getNewsCount() } , 7000);
+        this.checkUpdates();
     };
 
     // Function that tracks if user at the and of a page. If so, it call function to render new news
@@ -95,16 +104,15 @@ $(function() {
         // show big button above news feed with counter how much news have appeared in rss feed since user updated the
         // page last time
 
-        // if (newsCounter < 1) {
-        //     console.log('There are no new news.');
-        //     return;
-        // }
-        let newContainer = $('<div/>');
-        let counter = $('<h2/>');
+        if (newsCounter < 1) {
+            console.log('There are no new news.');
+            return;
+        }
+        let freshNewsButton = $('.fresh-news-counter');
+        freshNewsButton.removeClass('tmpl'); // make element visible
+
+        let counter = $('.fresh-news-counter h2');
         counter.text('More news: ' + newsCounter);
-        newContainer.addClass('fresh-news-counter');
-        newContainer.append(counter);
-        this.articlesList.prepend(newContainer);
     };
 
     RSSReader.prototype.getNewsCount = function() {

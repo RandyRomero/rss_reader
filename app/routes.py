@@ -15,7 +15,7 @@ import re
 from pprint import pprint
 
 # will be changed when I add database with users, because we need to track this time for every user
-last_time_user_gets_his_news = None
+last_time_user_gets_his_news = datetime.timestamp(datetime.now())
 
 
 rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
@@ -79,7 +79,7 @@ def parse_rss(link, mode):
         # Try to get link to image from one of a place where it can be
         try:
             pic = entry.enclosures[0].href
-        except (IndexError, AttributeError):
+        except(IndexError, AttributeError):
             pic = get_img_source(entry.summary)
 
         post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
