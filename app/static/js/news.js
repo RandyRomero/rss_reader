@@ -3,6 +3,8 @@
 
 
 // todo make function that updates the timestamp on every news on a page once in a minute
+// todo refresh the whole news feed instead of adding new news if there are more
+// than app.config["NEWS_TO_RETURN_AT_ONCE"] new news
 
 
 // $(function() { ... });
@@ -164,13 +166,16 @@ $(function() {
         @param {integer} newsCounter - number of fresh news. This integer will be shown on button above news
          */
 
+        let newsCounterText =  $('.fresh-news-counter h2');
+
         if (this.freshNewsButton.hasClass('tmpl')) {
             this.freshNewsButton.removeClass('tmpl'); // make element visible
+            newsCounterText.text('More news: ' + newsCounter);
             this.articlesList.prepend(this.freshNewsButton); // move button upon news feed
             return;
         }
 
-        $('.fresh-news-counter h2').text('More news: ' + newsCounter);
+        newsCounterText.text('More news: ' + newsCounter);
     };
 
 
@@ -188,7 +193,7 @@ $(function() {
         }).done((response) => {
             console.log('Server responded with the counter');
             if (response < 1) {
-               console.log('There are no new news.');
+                console.log('There are no new news.');
                 return;
             }
             this.renderMoreNewsButton(response);
