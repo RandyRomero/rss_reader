@@ -184,22 +184,6 @@ def get_all_news():
     return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
 
-@app.route('/fresh-news-counter')
-def get_news_counter():
-    """
-    :return: number of news that have appeared since last time server returned news to this user
-    """
-    counter = 0
-    for link in rss_links.values():
-        news_number = parse_rss(link, 'count')
-        try:
-            counter += news_number
-        except TypeError:
-            print(news_number)
-
-    return str(counter)
-
-
 @app.route('/get-latest-news')
 def get_latest_news():
     """

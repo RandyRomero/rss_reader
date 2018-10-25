@@ -5,6 +5,7 @@
 // todo make function that updates the timestamp on every news on a page once in a minute
 // todo refresh the whole news feed instead of adding new news if there are more
 // than app.config["NEWS_TO_RETURN_AT_ONCE"] new news
+// todo put counter of new news in a title every time there are some news
 
 
 // $(function() { ... });
@@ -34,7 +35,7 @@ $(function() {
     RSSReader.prototype.init = function() {
         /* Things to do right after initialization */
         this.getFeed('all', 'refresh news');
-        this.freshNewsButton.on('click', this.getLatestNews.bind(this));
+        this.freshNewsButton.on('click', this.renderLatestNews.bind(this));
     };
 
     RSSReader.prototype.trackScroll = function() {
@@ -138,25 +139,17 @@ $(function() {
         return newItem;
     };
 
-    RSSReader.prototype.getLatestNews = function() {
+    RSSReader.prototype.renderLatestNews = function() {
         /*
         Gets from server list of news that have appeared since user got news last time
         In case ajax request was successive the function calls render function to add the lastest news to the page
         and hides button that activates this function
          */
 
-        console.log('Sending request for the latest news.');
-        $.ajax({
-            url: 'http://127.0.0.1:5000/get-latest-news',
-            method: 'GET',
-            dataType: 'json'
-        }).done((response) => {
-            console.log('We got latest news!');
-            console.dir(response);
-            this.renderFeed(response, 'prepend');
-            this.freshNewsButton.addClass('tmpl');
-            console.log('Hiding fresh news button');
-        }).fail((error) => { console.log(error); })
+        this.freshNewsButton.addClass('tmpl');
+        console.log('Hiding fresh news button');
+        this.renderFeed(this.freshNews, 'prepend');
+
     };
 
     RSSReader.prototype.renderMoreNewsButton = function(newsCounter) {
@@ -181,22 +174,23 @@ $(function() {
 
     RSSReader.prototype.getNewsCounter = function() {
         /*
-            Make ajax-request to get quantity of news that have appeared in rss feed since user updated the
-            page last time
-         */
+          Make ajax-request to get new news if there some
+        */
 
-        console.log('Sending ajax-request to get number of fresh news...');
+        console.log('Sending ajax-request for the latest news.');
         $.ajax({
-            url: 'http://127.0.0.1:5000/fresh-news-counter',
+            url: 'http://127.0.0.1:5000/get-latest-news',
             method: 'GET',
             dataType: 'json'
         }).done((response) => {
-            console.log('Server responded with the counter');
-            if (response < 1) {
+            if (response.length < 1) {
                 console.log('There are no new news.');
                 return;
             }
-            this.renderMoreNewsButton(response);
+            console.log('We got latest news!');
+            this.renderMoreNewsButton(response.length);
+            this.freshNews = response;
+
         }).fail((error) => { console.log(error); })
     };
 
