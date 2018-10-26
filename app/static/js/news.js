@@ -27,6 +27,7 @@ $(function() {
          * Recursively checking for more news
          */
         setTimeout(() => {
+            this.updatePublishingTime();
             this.getNewsCounter();
             this.checkUpdates();
         } , 60000);
@@ -124,6 +125,7 @@ $(function() {
 
         let newItem = this.articleTmpl.clone().removeClass('article-tmpl');
         newItem.find('.post-heading').html(item.title);
+
         if (item['domain_name']) {
             newItem.find('.author').html(' by ' + item['domain_name']);
         }
@@ -131,11 +133,15 @@ $(function() {
         // moment.js library
         newItem.find('.date').html('Published ' + (moment.unix(item['published'])).fromNow());
 
+        // save timestamp to get access to it later when page will be rerendering how long ago news where published
+        newItem.find('.date').attr('published', item['published']);
         if (item['image']) {
             newItem.find('.pic').attr('src', item['image']);
         }
 
         newItem.find('.action-button').attr('href', item['link']);
+        // newItem.attr('published', item['published']);
+        // console.log(newItem.data());
         return newItem;
     };
 
@@ -149,7 +155,7 @@ $(function() {
         this.freshNewsButton.addClass('tmpl');
         console.log('Hiding fresh news button');
         this.renderFeed(this.freshNews, 'prepend');
-
+        this.updatePublishingTime();
     };
 
     RSSReader.prototype.renderMoreNewsButton = function(newsCounter) {
@@ -193,6 +199,19 @@ $(function() {
 
         }).fail((error) => { console.log(error); })
     };
+
+    RSSReader.prototype.updatePublishingTime = function() {
+        // console.log($('.article').find('.date'));
+        $('.article').each(function() {
+            $(this).find('.date').text(moment.unix(+($(this).find('.date').attr('published'))).fromNow());
+            console.log('done');
+            // console.log($(this).find('.date').attr('published'));
+            // console.log($(this));
+        });
+
+    };
+
+    // setTimeout(RSSReader.prototype.updatePublishingTime, 60000);
 
     window.rssReader = new RSSReader();
 });
