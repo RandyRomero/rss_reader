@@ -145,6 +145,25 @@ $(function() {
         return newItem;
     };
 
+    RSSReader.prototype.updateNewsTimer = function() {
+        /*
+        Sends server request to update the date when user pushed the button to render the latest news on his page.
+        It is necessary to make server understand what news are new and what news have been already seen by user
+
+         */
+        console.log('Connecting to the server to update date when user got his news last time');
+        $.ajax({
+            url: 'http://127.0.0.1:5000/update-news-timer',
+            method: 'POST'
+        }).done(() => {
+            console.log('Successfully updated date when user got news last time.')
+        }).fail((error) => {
+            console.log('Server was unable to update date when user got his news last time because of the' +
+                'folliwing error: ');
+            console.log(error);
+        })
+    };
+
     RSSReader.prototype.renderLatestNews = function() {
         /*
         Gets from server list of news that have appeared since user got news last time
@@ -154,6 +173,7 @@ $(function() {
 
         this.freshNewsButton.addClass('tmpl');
         console.log('Hiding fresh news button');
+        this.updateNewsTimer();
         this.renderFeed(this.freshNews, 'prepend');
         this.updatePublishingTime();
     };
@@ -201,17 +221,16 @@ $(function() {
     };
 
     RSSReader.prototype.updatePublishingTime = function() {
-        // console.log($('.article').find('.date'));
+        /*
+        Updates published time of every news on the page. Time of publishing renders not as a date in the past, but
+        how many time passed since this time in the past. That's why we need to update it regularly. And that function
+        does it.
+         */
         $('.article').each(function() {
-            $(this).find('.date').text(moment.unix(+($(this).find('.date').attr('published'))).fromNow());
-            console.log('done');
-            // console.log($(this).find('.date').attr('published'));
-            // console.log($(this));
+            $(this).find('.date').text('Published ' + moment.unix(+($(this).find('.date').attr('published'))).fromNow());
         });
-
+        console.log('Done updating time of publishing.');
     };
-
-    // setTimeout(RSSReader.prototype.updatePublishingTime, 60000);
 
     window.rssReader = new RSSReader();
 });

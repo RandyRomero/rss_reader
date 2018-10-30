@@ -27,8 +27,6 @@ rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              '3dnews-hard': 'https://3dnews.ru/news/rss/',
              'techspot': 'https://www.techspot.com/backend.xml'}
 
-# TODO Auto-update
-
 
 # Get link to image from html string with nested tags
 def get_img_source(htmlstr):
@@ -152,14 +150,14 @@ def get_big_feed():
 get_big_feed_closure = get_big_feed()
 
 
-@app.route('/')
-@app.route('/index')
+@app.route('/', methods=['GET', 'POST'])
+@app.route('/index', methods=['GET', 'POST'])
 def start():
     return render_template('index.html')
 
 
 # Function that figures out which rss feed to return, gets it from another function, convert to json and returns
-@app.route('/get-feed')
+@app.route('/get-feed', methods=['GET'])
 def get_all_news():
     global last_time_user_gets_his_news
     global get_big_feed_closure
@@ -184,12 +182,26 @@ def get_all_news():
     return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
 
 
-@app.route('/get-latest-news')
+@app.route('/get-latest-news', methods=['GET'])
 def get_latest_news():
     """
     :return: list of news that have appeared since user get news last time
     """
-    global last_time_user_gets_his_news
     latest_news = make_news_feed('latest')
-    last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
     return json.dumps(latest_news, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+
+
+@app.route('/update-news-timer', methods=['POST'])
+def update_news_timer():
+    """
+    Updates date stored on server when user push the button to render the latest news on his page
+    :return: either empty string and code 204 in case the date was successfully updated or python error message and
+    500 response code
+    """
+    try:
+        global last_time_user_gets_his_news
+        last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
+        return '', 204
+    except Exception as e:
+        return e, 500
+
