@@ -1,7 +1,5 @@
 body {
-    background-image: url("../emre-gencer-95245-unsplash.jpg");
-    background-attachment: fixed;
-    background-repeat: no-repeat;
+    background: url("../emre-gencer-95245-unsplash.jpg") no-repeat fixed;
     background-size: cover;
 }
 
@@ -11,6 +9,10 @@ body {
 
 .fresh-news-counter h2{
     color: rgba(255, 255, 255, 0.85);
+    /*text-align: center;*/
+}
+
+.fresh-news-counter img, .fresh-news-counter h2 {
     text-align: center;
 }
 

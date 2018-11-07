@@ -33,7 +33,8 @@
             crossorigin="anonymous">
     </script>
     <script src="https://momentjs.com/downloads/moment.js"></script>
-    <script src="../static/js/news.js"></script>
+{#    <script src="../static/js/news.js"></script>#}
+    <script src="{{ url_for('static',  filename='js/news.js') }}" ></script>
 
 </body>
 </html>

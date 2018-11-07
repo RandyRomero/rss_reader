@@ -1,11 +1,10 @@
 // This code is mostly written with significant help and inspiration by Sergey Puzakov,
 // thought he doesn't know it
 
-
-// todo make function that updates the timestamp on every news on a page once in a minute
+// ready - to make function that updates the timestamp on every news on a page once in a minute
 // todo refresh the whole news feed instead of adding new news if there are more
 // than app.config["NEWS_TO_RETURN_AT_ONCE"] new news
-// todo put counter of new news in a title every time there are some news
+// todo (in progress) put counter of new news in a title every time there are some news
 
 
 // $(function() { ... });
@@ -19,6 +18,12 @@ $(function() {
         this.articlesList = $('.articles');
         this.articleTmpl = $('.article-tmpl');
         this.freshNewsButton = $('.fresh-news-counter');
+        this.pageTitle = $(document).find('title');
+        this.pageTitleOriginalText = this.pageTitle.text();
+        this.feedID = 'all'; // feedId - name of the resource to pick the right link to rss feed
+        this.newsCounterText = this.freshNewsButton.find('h2');
+        this.loadingAnimationTimeout = null; // there will be save setTimeout id
+        this.articlesList.on('click', this.freshNewsButton, this.manageRenderingLatestNews.bind(this));
         this.init();
     };
 
@@ -35,8 +40,7 @@ $(function() {
 
     RSSReader.prototype.init = function() {
         /* Things to do right after initialization */
-        this.getFeed('all', 'refresh news');
-        this.freshNewsButton.on('click', this.renderLatestNews.bind(this));
+        this.getFeed('refresh news');
     };
 
     RSSReader.prototype.trackScroll = function() {
@@ -55,7 +59,7 @@ $(function() {
 
             // The .off() method removes event handlers that were attached with .on().
             $(window).off('scroll', this.scrollListener);
-            this.getFeed('all', 'add old news');
+            this.getFeed('add old news');
         }
     };
 
@@ -85,7 +89,7 @@ $(function() {
     };
 
 
-    RSSReader.prototype.getFeed = function(feedId, addNews) {
+    RSSReader.prototype.getFeed = function(addNews) {
         /*
         @param {str} feedId - name of the resource to pick the right link to rss feed
         @param {str} addNews - mode of adding news: refresh all page or just add old news after already
@@ -100,7 +104,7 @@ $(function() {
         }
         $.ajax({
             url: this.feedUrl,
-            data: { rsource: feedId, addNews: addNews},
+            data: { rsource: this.feedID, addNews: addNews},
             method: 'GET',
             dataType: 'json'
         }).done((response) => {
@@ -159,15 +163,61 @@ $(function() {
             console.log('Successfully updated date when user got news last time.')
         }).fail((error) => {
             console.log('Server was unable to update date when user got his news last time because of the' +
-                'folliwing error: ');
+                'following error: ');
             console.log(error);
         })
+    };
+
+
+    RSSReader.prototype.animateLoadingNewsButton = function () {
+        // Function that renders message on a button like "Loading...." with increasing number of dots
+        // to show to the user that new news is going to be shown soon
+
+        let _self = this;
+        let loadingText = 'Loading';
+        let dots = '';
+
+        function animate() {
+            // Change text in the button (which activates loading of news form server) for "Loading.." with changing
+            // number of dots and recursively calls itself every 500 milliseconds to keep
+            _self.newsCounterText.text(loadingText + dots);
+            dots += '.';
+            if (dots.length > 3) {
+                dots = '';
+                _self.loadingAnimationTimeout = setTimeout(animate, 500);
+                return;
+            }
+            loadingText = 'Loading';
+            _self.loadingAnimationTimeout = setTimeout(animate, 500);
+        }
+        animate();
+    };
+
+    RSSReader.prototype.rerenderNews = function() {
+        // erases the whole news section on a webpage and renders latest news anew
+
+        console.log('Wait for news to be downloaded from the server...');
+        this.animateLoadingNewsButton();
+
+        $.ajax({
+            url: this.feedUrl,
+            data: {rsource: this.feedID, addNews: 'refresh news'},
+            method: 'GET',
+            dataType: 'json'
+        }).done((response) => {
+            clearTimeout(this.loadingAnimationTimeout);
+            $('.articles-loaded').html(''); // clearing out previous news
+            this.renderFeed(response, 'append');
+            this.freshNewsButton.addClass('tmpl');
+            this.pageTitle.text(this.pageTitleOriginalText)
+
+        }).fail((error) => { console.log(error);});
     };
 
     RSSReader.prototype.renderLatestNews = function() {
         /*
         Gets from server list of news that have appeared since user got news last time
-        In case ajax request was successive the function calls render function to add the lastest news to the page
+        In case ajax request was successive the function calls render function to add the latest news to the page
         and hides button that activates this function
          */
 
@@ -176,6 +226,7 @@ $(function() {
         this.updateNewsTimer();
         this.renderFeed(this.freshNews, 'prepend');
         this.updatePublishingTime();
+        this.pageTitle.text(this.pageTitleOriginalText)
     };
 
     RSSReader.prototype.renderMoreNewsButton = function(newsCounter) {
@@ -185,16 +236,28 @@ $(function() {
         @param {integer} newsCounter - number of fresh news. This integer will be shown on button above news
          */
 
-        let newsCounterText =  $('.fresh-news-counter h2');
+        // Show number of new news in the title of the page
+        this.pageTitle.text(`${this.pageTitleOriginalText} (${newsCounter})`);
 
         if (this.freshNewsButton.hasClass('tmpl')) {
             this.freshNewsButton.removeClass('tmpl'); // make element visible
-            newsCounterText.text('More news: ' + newsCounter);
+            this.newsCounterText.text('More news: ' + newsCounter);
             this.articlesList.prepend(this.freshNewsButton); // move button upon news feed
             return;
         }
 
-        newsCounterText.text('More news: ' + newsCounter);
+        this.newsCounterText.text('More news: ' + newsCounter);
+    };
+
+    RSSReader.prototype.manageRenderingLatestNews = function() {
+        // Decides whether to add the latest news in the beginning (if there are few of them), or erase the whole
+        // news section on a webpage and render latest news anew
+
+        if (this.freshNews.length >= 20) {
+            this.rerenderNews();
+            return;
+        }
+        this.renderLatestNews();
     };
 
 
@@ -213,7 +276,8 @@ $(function() {
                 console.log('There are no new news.');
                 return;
             }
-            console.log('We got latest news!');
+
+            console.log('We\'ve got latest news!');
             this.renderMoreNewsButton(response.length);
             this.freshNews = response;
 

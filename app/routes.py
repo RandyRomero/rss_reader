@@ -13,6 +13,7 @@ import pytz
 from bs4 import BeautifulSoup as bs
 import re
 
+
 # will be changed when I add database with users, because we need to track this time for every user
 last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
 
@@ -25,7 +26,8 @@ rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
              'bi': 'https://www.businessinsider.com/sai/rss?IR=T',
              'tproger': 'https://tproger.ru/feed/',
              '3dnews-hard': 'https://3dnews.ru/news/rss/',
-             'techspot': 'https://www.techspot.com/backend.xml'}
+             'techspot': 'https://www.techspot.com/backend.xml',
+             'reuters-world': 'http://feeds.reuters.com/Reuters/worldNews'}
 
 
 # Get link to image from html string with nested tags
@@ -64,12 +66,6 @@ def parse_rss(link, mode):
     rss = feedparser.parse(link)  # Get file from internet, open it with xml-parser
 
     for entry in rss.entries:
-        if mode == 'count':
-            if get_timestamp(entry.published) < last_time_user_gets_his_news:
-                return news_counter
-            else:
-                news_counter += 1
-                continue
 
         if mode == 'latest':
             news_item_date = get_timestamp(entry.published)
@@ -189,6 +185,8 @@ def get_latest_news():
     """
     latest_news = make_news_feed('latest')
     return json.dumps(latest_news, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+    # return json.dumps(parse_rss('https://www.theverge.com/rss/index.xml', 'whatever'), indent=4, sort_keys=True,
+    #                   separators=(',', ': '), ensure_ascii=False)
 
 
 @app.route('/update-news-timer', methods=['POST'])
