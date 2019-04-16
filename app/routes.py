@@ -1,6 +1,5 @@
-#!python3
-# -*- coding: utf-8 -*-
-# some kind of backend which takes ajax-request, reads certain rss feeds and return specific information from
+# some kind of backend which takes ajax-request, reads certain rss feeds and
+# return specific information from
 # them as json with list of posts
 
 import json
@@ -8,26 +7,25 @@ import feedparser
 from flask import request, render_template, url_for
 from app import app
 import datetime as dt
-import dateutil.parser  # pip install python-dateutil // to convert date from iso to datetime object
+# pip install python-dateutil // to convert date from iso to datetime object
+import dateutil.parser
 import pytz
 from bs4 import BeautifulSoup as bs
 import re
 
 
-# will be changed when I add database with users, because we need to track this time for every user
-last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
+# will be changed when I add database with users, because we need to track
+# this time for every user
+last_time_user_got_news = dt.datetime.timestamp(dt.datetime.now())
 
-
-rss_links = {'ferra-articles': 'https://www.ferra.ru/export/articles-rss.xml',
-             'ferra-news': 'https://www.ferra.ru/export/news-rss.xml',
+rss_links = {'ferra-news': 'https://www.ferra.ru/export/news-rss.xml',
              'techradar': 'https://www.techradar.com/rss',
              'verge': 'https://www.theverge.com/rss/index.xml',
              'ubkreview': 'https://www.ultrabookreview.com/feed/',
              'bi': 'https://www.businessinsider.com/sai/rss?IR=T',
              'tproger': 'https://tproger.ru/feed/',
              '3dnews-hard': 'https://3dnews.ru/news/rss/',
-             'techspot': 'https://www.techspot.com/backend.xml',
-             'reuters-world': 'http://feeds.reuters.com/Reuters/worldNews'}
+             'techspot': 'https://www.techspot.com/backend.xml'}
 
 
 # Get link to image from html string with nested tags
@@ -43,35 +41,41 @@ def get_timestamp(date):
         date_temp = dt.datetime.strptime(date, '%a, %d %b %Y %H:%M:%S %z')
         return date_temp.timestamp()
     except ValueError:
-        # Converting time from iso format (like this 2018-08-02T13:32:37-04:00) to timestamp
+        # Converting time from iso format (like this 2018-08-02T13:32:37-04:00)
+        # to timestamp
         d = dateutil.parser.parse(date)
-        d = d.replace(tzinfo=pytz.utc) - d.utcoffset()  # lead up given time to UTC 00:00
+        # lead up given time to UTC 00:00
+        d = d.replace(tzinfo=pytz.utc) - d.utcoffset()
         return d.timestamp()  # save as timestamp
 
 
 def parse_rss(link, mode):
 
     """
-    Function that takes one link to the rss feed and picks up specific data from it, saves each news as a dictionary,
+    Function that takes one link to the rss feed and picks up specific data
+    from it, saves each news as a dictionary,
     push these dictionaries to the list
     :param link: link to rss feed
-    :param mode: what to do - parse all feeds to the end or parse only news that appeared since last returning of
-    a feed to client or just count new news
+    :param mode: what to do - parse all feeds to the end or parse only news
+    that appeared since last returning of a feed to client or just count
+    new news
     :return: list with dictionaries
     """
 
     one_feed = []
     news_counter = 0
     app.logger.info(f'Parsing feed: {link}')
-    rss = feedparser.parse(link)  # Get file from internet, open it with xml-parser
+    # Get file from internet, open it with xml-parser
+    rss = feedparser.parse(link)
 
     for entry in rss.entries:
 
         if mode == 'latest':
             news_item_date = get_timestamp(entry.published)
 
-            # Stop reading RSS if current news is already older than time when user last got the news feed
-            if news_item_date < last_time_user_gets_his_news:
+            # Stop reading RSS if current news is already older than time
+            # when user last got the news feed
+            if news_item_date < last_time_user_got_news:
                 return one_feed
 
         post = {'title': entry.title,
@@ -83,7 +87,8 @@ def parse_rss(link, mode):
         except(IndexError, AttributeError):
             pic = get_img_source(entry.summary)
 
-        post['image'] = pic if pic else url_for('static', filename="400x400.jpg")
+        post['image'] = pic if pic else url_for('static',
+                                                filename="400x400.jpg")
 
         link = entry.link
         post['link'] = link
@@ -116,15 +121,19 @@ def make_news_feed(mode):
 def get_feed_generator():
     new_mixed_feed = make_news_feed('parse_all')
     # Return only some part of news at once
-    for x in range(0, len(new_mixed_feed), app.config['NEWS_TO_RETURN_AT_ONCE']):
-        app.logger.debug(f'There are {x+app.config["NEWS_TO_RETURN_AT_ONCE"]} news on the page now')
+    for x in range(0, len(new_mixed_feed),
+                   app.config['NEWS_TO_RETURN_AT_ONCE']):
+        app.logger.debug(f'There are {x+app.config["NEWS_TO_RETURN_AT_ONCE"]} '
+                         'news on the page now')
         yield new_mixed_feed[x:x+app.config['NEWS_TO_RETURN_AT_ONCE']]
 
 
 def get_big_feed():
-    """ Closure in order to make a list with all news sorted, but to return to client only by several items at once """
+    """ Closure in order to make a list with all news sorted, but to return
+    to client only by several items at once """
 
-    # A list of news items. We need to preserve it in order to create it once during the first call, and to
+    # A list of news items. We need to preserve it in order to create it once
+    # during the first call, and to
     # return these items from this already existing list
     big_feed_gen = None
 
@@ -133,13 +142,14 @@ def get_big_feed():
 
         if big_feed_gen:
             try:
-                return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '),
-                                  ensure_ascii=False)
+                return json.dumps(next(big_feed_gen), indent=4, sort_keys=True,
+                                  separators=(',', ': '), ensure_ascii=False)
             except StopIteration:
                 return '', 204
         else:
             big_feed_gen = get_feed_generator()
-            return json.dumps(next(big_feed_gen), indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+            return json.dumps(next(big_feed_gen), indent=4, sort_keys=True,
+                              separators=(',', ': '), ensure_ascii=False)
     return nested_return_feed
 
 
@@ -152,10 +162,11 @@ def start():
     return render_template('index.html')
 
 
-# Function that figures out which rss feed to return, gets it from another function, convert to json and returns
+# Function that figures out which rss feed to return, gets it from another
+# function, convert to json and returns
 @app.route('/get-feed', methods=['GET'])
 def get_all_news():
-    global last_time_user_gets_his_news
+    global last_time_user_got_news
     global get_big_feed_closure
     # get argument from request where coded what rss_feed page asks from server
     rss_source = str(request.args.get('rsource'))
@@ -171,11 +182,12 @@ def get_all_news():
             app.logger.debug('making new feed')
             # Resetting closure to get refreshed feed
             get_big_feed_closure = get_big_feed()
-            last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
+            last_time_user_got_news = dt.datetime.timestamp(dt.datetime.now())
             return get_big_feed_closure()
     # if you need to return posts only from one particular source
     feed = parse_rss(rss_links[rss_source], 'get_news')
-    return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
+    return json.dumps(feed, indent=4, sort_keys=True, separators=(',', ': '),
+                      ensure_ascii=False)
 
 
 @app.route('/get-latest-news', methods=['GET'])
@@ -184,21 +196,21 @@ def get_latest_news():
     :return: list of news that have appeared since user get news last time
     """
     latest_news = make_news_feed('latest')
-    return json.dumps(latest_news, indent=4, sort_keys=True, separators=(',', ': '), ensure_ascii=False)
-    # return json.dumps(parse_rss('https://www.theverge.com/rss/index.xml', 'whatever'), indent=4, sort_keys=True,
-    #                   separators=(',', ': '), ensure_ascii=False)
+    return json.dumps(latest_news, indent=4, sort_keys=True,
+                      separators=(',', ': '), ensure_ascii=False)
 
 
 @app.route('/update-news-timer', methods=['POST'])
 def update_news_timer():
     """
-    Updates date stored on server when user push the button to render the latest news on his page
-    :return: either empty string and code 204 in case the date was successfully updated or python error message and
+    Updates date stored on server when user push the button to render the
+    latest news on his page :return: either empty string and code 204 in case
+    the date was successfully updated or python error message and
     500 response code
     """
     try:
-        global last_time_user_gets_his_news
-        last_time_user_gets_his_news = dt.datetime.timestamp(dt.datetime.now())
+        global last_time_user_got_news
+        last_time_user_got_news = dt.datetime.timestamp(dt.datetime.now())
         return '', 204
     except Exception as e:
         return e, 500
